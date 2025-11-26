@@ -1,4 +1,5 @@
 STATE PATTERN – LLR
+
 LLR-S1
 
 MSH sınıfı sistem açıldığında varsayılan state olarak NormalState nesnesini başlatmalıdır.
