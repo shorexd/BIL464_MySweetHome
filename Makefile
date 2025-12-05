@@ -6,7 +6,8 @@ CXXFLAGS = -std=c++98 -Wall -Wextra -Iinclude
 TARGET   = bin/msh_app
 
 # Kaynak Dosyalar
-SRCS     = src/main.cpp
+SRCS = src/main.cpp src/Logger.cpp src/ChineseLight.cpp src/ChineseLightAdapter.cpp
+
 
 # Derleme Kurali
 all:
