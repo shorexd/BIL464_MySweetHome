@@ -10,7 +10,7 @@ public:
     // Singleton erişim noktası
     static Logger& getInstance();
 
-    // Log dosyasını aç (varsayılan isim: msh_log.txt)
+    // Log dosyasını aç (varsayılan isim: "msh_log.txt")
     void open(const std::string& filename = "msh_log.txt");
 
     // Log dosyasını kapat
@@ -29,9 +29,9 @@ private:
     Logger();
     ~Logger();
 
-    // Kopyalama yasak (Singleton)
-    Logger(const Logger&) = delete;
-    Logger& operator=(const Logger&) = delete;
+    // C++98 tarzı: kopyalama yasak (sadece deklarasyon, tanım yok)
+    Logger(const Logger&);
+    Logger& operator=(const Logger&);
 
     std::ofstream m_file;
 };
