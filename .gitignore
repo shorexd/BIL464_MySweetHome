@@ -1,0 +1,17 @@
+# Derleme cikti klasorleri
+bin/
+build/
+
+# IDE dosyalari (VS Code vb.)
+.vscode/
+.idea/
+
+# Log ve Gecici Dosyalar
+*.txt
+*.log
+*.exe
+*.o
+
+# OS dosyalari
+.DS_Store
+Thumbs.db

@@ -7,8 +7,10 @@
 // YENI EKLENENLER:
 #include "../Devices/Camera.h"
 #include "../Devices/SmokeDetector.h"
+#include "Devices/ChineseLightAdapter.h"
 
 // Forward Declaration
+#include "Utils/Logger.h" // yeni ekledim
 class Menu;
 class DeviceManager;
 class Logger;

@@ -12,7 +12,7 @@ SystemController* SystemController::getInstance() {
 
 SystemController::SystemController() {
     // --- GECICI NULL ATAMALARI ---
-    logger = 0; 
+    logger = &Logger::getInstance(); // logger i alinin singleton yapisindan cektigim icin 
     menu = 0;
     deviceMgr = 0;
 
@@ -43,6 +43,12 @@ void SystemController::init() {
         smokeDetector->attach(detectionSys);
     }
 
+    //alinin log dosyasini acma fonksiyonu
+    if (logger) {
+        logger->open("msh_log.txt"); 
+        logger->log("[System] SystemController initialized. Logger is active.");
+    }
+
     std::cout << ">> SISTEM BASLATILDI (Normal Mode)." << std::endl;
 }
 
@@ -54,6 +60,7 @@ void SystemController::run() {
         std::cout << "[10] Cikis Yap" << std::endl;
         std::cout << "[99] TEST: Hirsiz (Kamera)" << std::endl;
         std::cout << "[98] TEST: Yangin (Dedektor)" << std::endl;
+        std::cout << "[97] TEST: Cin Mali Isik (Adapter)" << std::endl; // ali yeni
         std::cout << "Secim: ";
 
         int choice;
@@ -67,6 +74,18 @@ void SystemController::run() {
             } 
             else if (choice == 98) {
                 if (smokeDetector) smokeDetector->detectSmoke();
+            }
+            else if (choice == 97) {
+                // ALİ'NİN ADAPTER TESTİ
+                std::cout << "[Test] Adapter Olusturuluyor..." << std::endl;
+                ChineseLightAdapter* cnLight = new ChineseLightAdapter("Cin-Lamba-2025");
+                
+                cnLight->turnOn(); // Adapter üzerinden aç
+                cnLight->setBrightnessPercent(50); // Adapter üzerinden ayarla
+                cnLight->turnOff(); // Adapter üzerinden kapat
+                
+                delete cnLight;
+                std::cout << "[Test] Adapter testi bitti. Log dosyasina bak!" << std::endl;
             }
             else {
                 std::cout << "Gecersiz secim." << std::endl;
@@ -90,6 +109,12 @@ void SystemController::shutdown() {
     // Sensorleri Temizle
     if (camera) { delete camera; camera = 0; }
     if (smokeDetector) { delete smokeDetector; smokeDetector = 0; }
+
+    //alinin log sistemi dosya kapatma fonksiyonu
+    if (logger) {
+        logger->log("[System] System shutting down.");
+        logger->close(); // Dosyayı kapat
+    }
 
     std::cout << "[Log-Sim] System Bye." << std::endl;
 }
