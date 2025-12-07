@@ -1,0 +1,29 @@
+CXX = g++
+CXXFLAGS = -std=c++98 -Wall -Wextra
+
+SRC = Murat-Src/Device.cpp \
+      Murat-Src/DeviceFactory.cpp \
+      Murat-Src/LGFactory.cpp \
+      Murat-Src/LGTV.cpp \
+      Murat-Src/SamsungFactory.cpp \
+      Murat-Src/SamsungTv.cpp \
+      Murat-Src/Tv.cpp
+
+OBJ = $(SRC:.cpp=.o)
+
+all: $(OBJ)
+	@echo "✓ Murat device siniflari başariyla derlendi."
+
+%.o: %.cpp
+	$(CXX) -c $(CXXFLAGS) $< -o $@
+
+clean:
+	del /Q Murat-Src\*.o 2>nul
+	del /Q test_murat.exe 2>nul
+
+# ----------------------------
+#      TEST TARGET
+# ----------------------------
+test: $(OBJ) Murat-Src/test_main.o
+	$(CXX) $(CXXFLAGS) -o test_murat $(OBJ) Murat-Src/test_main.o
+	@echo "✓ test_murat.exe başariyla oluşturuldu."
