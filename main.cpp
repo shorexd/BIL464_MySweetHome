@@ -2,6 +2,9 @@
 #include <limits>
 #include "include/MSH.h"
 #include "include/ConcreteStates.h"
+//Delay Lib
+#include <chrono>
+#include <thread>
 
 // Durum bilgilerini gosteren panel fonksiyonu
 void printDashboard(MSH* system) {
@@ -25,11 +28,17 @@ int main() {
     MSH* system = new MSH();
     HomeStateMemento backup(NULL); 
     bool hasBackup = false; 
+    //Delay init
+    using namespace std::this_thread; // sleep_for, sleep_until
+    using namespace std::chrono;
 
     int choice = 0;
     bool running = true;
 
     while (running) {
+        //Delay
+        sleep_for(seconds(1));
+        sleep_until(system_clock::now() + seconds(1));
         // Yeni paneli burada cagiriyoruz
         printDashboard(system);
         printMenu();
@@ -65,4 +74,5 @@ int main() {
 
     delete system;
     return 0;
+
 }
