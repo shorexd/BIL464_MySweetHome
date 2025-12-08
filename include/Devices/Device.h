@@ -1,9 +1,7 @@
-/*
- * File: include/Devices/Device.h
- * Description: Abstract Base Class for all IoT devices.
- * Standard: C++98
+/**
+ * DOSYA: include/Devices/Device.h
+ * DUZELTME: Prototype (clone) ve Kimlik (id, name) eklendi.
  */
-
 #ifndef DEVICE_H
 #define DEVICE_H
 
@@ -12,46 +10,28 @@
 
 class Device {
 protected:
-    int id;                 // Cihaz ID
-    std::string name;       // Cihaz Adi (Marka/Model)
-    bool isPoweredOn;       // Acik/Kapali Durumu
-    bool isActive;          // Arizali/Saglam Durumu
+    int id;
+    std::string name;
+    bool isOn;
 
 public:
-    // Constructor
-    Device(int deviceId, const std::string& deviceName) 
-        : id(deviceId), name(deviceName), isPoweredOn(false), isActive(true) {
-    }
-
-    // Virtual Destructor (Cok onemli)
+    Device() : id(0), name("Unknown"), isOn(false) {}
     virtual ~Device() {}
 
-    // Cihazi Acar
-    virtual void turnOn() {
-        if (!isActive) {
-            std::cout << "[Error] " << name << " is broken! Cannot turn on." << std::endl;
-            return;
-        }
-        isPoweredOn = true;
-        std::cout << name << " (ID: " << id << ") is now ON." << std::endl;
-    }
+    // Temel Fonksiyonlar
+    virtual void turnOn() = 0;
+    virtual void turnOff() = 0;
 
-    // Cihazi Kapatir
-    virtual void turnOff() {
-        isPoweredOn = false;
-        std::cout << name << " (ID: " << id << ") is now OFF." << std::endl;
-    }
-
-    // Prototype Pattern icin gerekli (Kopyalama)
-    virtual Device* clone() const = 0;
-
-    // Durum Yazdirma (Her cihaz kendi ozel durumunu yazar)
-    virtual void printStatus() const = 0;
-
-    // Getter Metodlar
+    // Getters & Setters
+    void setID(int newID) { id = newID; }
     int getID() const { return id; }
+    
+    void setName(const std::string& n) { name = n; }
     std::string getName() const { return name; }
-    bool getPowerState() const { return isPoweredOn; }
+
+    // --- PROTOTYPE PATTERN (Kritik) ---
+    // Yunus'un kopyalama yapabilmesi icin bu sart!
+    virtual Device* clone() const = 0;
 };
 
-#endif // DEVICE_H
+#endif

@@ -1,6 +1,12 @@
 #include "SystemController.h" 
 #include <iostream>
 
+// --- EKSIK OLAN INCLUDE'LAR EKLENDI ---
+#include "Devices/SamsungFactory.h"      // Murat
+#include "Devices/DeviceManager.h"       // Yunus (ARTIK AKTIF!)
+#include "Devices/DeviceIterator.h"      // Yunus
+#include "Logic/ConcreteStates.h"        // Mert
+
 SystemController* SystemController::instance = 0;
 
 SystemController* SystemController::getInstance() {
@@ -11,16 +17,24 @@ SystemController* SystemController::getInstance() {
 }
 
 SystemController::SystemController() {
-    // --- GECICI NULL ATAMALARI ---
-    logger = &Logger::getInstance(); // logger i alinin singleton yapisindan cektigim icin 
-    menu = 0;
-    deviceMgr = 0;
+    // 1. Logger (Ali)
+    logger = &Logger::getInstance(); 
 
-    // --- LOGIC SISTEMLERI ---
+    // 2. Menu (Hamza - Henuz yok)
+    menu = 0;
+
+    // 3. DeviceManager (Yunus - ARTIK AKTIF)
+    deviceMgr = new DeviceManager(); 
+
+    // 4. State (Mert) - Varsayilan NormalState
+    currentState = new NormalState();
+    savedState = 0;
+
+    // 5. Logic (Kayra)
     securitySys = new SecuritySystem();
     detectionSys = new DetectionSystem();
 
-    // --- SENSORLER (YENI) ---
+    // 6. Sensors
     camera = new Camera();
     smokeDetector = new SmokeDetector();
 }
@@ -30,37 +44,37 @@ SystemController::~SystemController() {
 }
 
 void SystemController::init() {
-    std::cout << "[Log-Sim] System initializing..." << std::endl;
-
-    // --- OBSERVER BAGLANTILARI (KRITIK NOKTA) ---
-    // 1. Kamerayi Guvenlik Sistemine bagla (Abone yap)
-    if (camera && securitySys) {
-        camera->attach(securitySys);
-    }
-
-    // 2. Duman Dedektorunu Algilama Sistemine bagla
-    if (smokeDetector && detectionSys) {
-        smokeDetector->attach(detectionSys);
-    }
-
-    //alinin log dosyasini acma fonksiyonu
+    // Log acilisi
     if (logger) {
         logger->open("msh_log.txt"); 
-        logger->log("[System] SystemController initialized. Logger is active.");
+        logger->log("[System] SystemController initialized.");
+    } else {
+        std::cout << "[Log-Sim] System initializing..." << std::endl;
     }
 
-    std::cout << ">> SISTEM BASLATILDI (Normal Mode)." << std::endl;
+    // State Giris
+    if (currentState) currentState->enterState(this);
+
+    // Observer Baglantilari
+    if (camera && securitySys) camera->attach(securitySys);
+    if (smokeDetector && detectionSys) smokeDetector->attach(detectionSys);
+
+    std::cout << ">> SISTEM BASLATILDI (" << getStateName() << ")." << std::endl;
 }
 
 void SystemController::run() {
     bool running = true;
     
     while (running) {
-        std::cout << "\n--- GECICI MENU ---" << std::endl;
+        // GECICI TEST MENU
+        std::cout << "\n--- MSH KONTROL PANELI ---" << std::endl;
+        std::cout << "MOD: " << getStateName() << " | PERFORMANS: " << getPerformance() << std::endl;
+        std::cout << "---------------------------" << std::endl;
         std::cout << "[10] Cikis Yap" << std::endl;
         std::cout << "[99] TEST: Hirsiz (Kamera)" << std::endl;
         std::cout << "[98] TEST: Yangin (Dedektor)" << std::endl;
-        std::cout << "[97] TEST: Cin Mali Isik (Adapter)" << std::endl; // ali yeni
+        std::cout << "[96] TEST: Cihaz Yonetimi (TV Ekle/Kopyala)" << std::endl;
+        std::cout << "[95] TEST: Durum Degistir (Uyku Moduna Gec)" << std::endl;
         std::cout << "Secim: ";
 
         int choice;
@@ -68,24 +82,26 @@ void SystemController::run() {
             if (choice == 10) {
                 running = false;
             } 
-            else if (choice == 99) {
-                // ARTIK GERCEK NESNE UZERINDEN TEST EDIYORUZ!
+            else if (choice == 99) { // Kayra Test
                 if (camera) camera->detectMotion();
             } 
-            else if (choice == 98) {
+            else if (choice == 98) { // Kayra Test
                 if (smokeDetector) smokeDetector->detectSmoke();
             }
-            else if (choice == 97) {
-                // ALİ'NİN ADAPTER TESTİ
-                std::cout << "[Test] Adapter Olusturuluyor..." << std::endl;
-                ChineseLightAdapter* cnLight = new ChineseLightAdapter("Cin-Lamba-2025");
-                
-                cnLight->turnOn(); // Adapter üzerinden aç
-                cnLight->setBrightnessPercent(50); // Adapter üzerinden ayarla
-                cnLight->turnOff(); // Adapter üzerinden kapat
-                
-                delete cnLight;
-                std::cout << "[Test] Adapter testi bitti. Log dosyasina bak!" << std::endl;
+            else if (choice == 96) { // Murat & Yunus Test
+                std::cout << "[Test] Cihaz Fabrikasi..." << std::endl;
+                SamsungFactory sf;
+                Device* tv = sf.createTV();
+                if(deviceMgr) {
+                    int id = deviceMgr->addDevice(tv);
+                    std::cout << "TV Eklendi. ID: " << id << std::endl;
+                    deviceMgr->copyDevice(id);
+                    std::cout << "TV Kopyalandi." << std::endl;
+                }
+            }
+            else if (choice == 95) { // Mert Test
+                std::cout << "[Test] Uyku Moduna Geciliyor..." << std::endl;
+                changeState(new SleepState());
             }
             else {
                 std::cout << "Gecersiz secim." << std::endl;
@@ -102,19 +118,58 @@ void SystemController::run() {
 void SystemController::shutdown() {
     std::cout << ">> SISTEM KAPATILIYOR..." << std::endl;
 
-    // Temizlik
     if (securitySys) { delete securitySys; securitySys = 0; }
     if (detectionSys) { delete detectionSys; detectionSys = 0; }
-    
-    // Sensorleri Temizle
     if (camera) { delete camera; camera = 0; }
     if (smokeDetector) { delete smokeDetector; smokeDetector = 0; }
+    
+    // Yunus'un DeviceManager'ini temizle
+    if (deviceMgr) { delete deviceMgr; deviceMgr = 0; }
 
-    //alinin log sistemi dosya kapatma fonksiyonu
+    // Mert'in State'lerini temizle
+    if (currentState) { delete currentState; currentState = 0; }
+    if (savedState) { delete savedState; savedState = 0; }
+
     if (logger) {
         logger->log("[System] System shutting down.");
-        logger->close(); // Dosyayı kapat
+        logger->close();
     }
+}
 
-    std::cout << "[Log-Sim] System Bye." << std::endl;
+// --- STATE IMPLEMENTASYONLARI ---
+
+void SystemController::changeState(HomeState* newState) {
+    if (currentState) {
+        currentState->exitState(this);
+        delete currentState;
+    }
+    currentState = newState;
+    if (currentState) currentState->enterState(this);
+}
+
+void SystemController::saveCurrentState() {
+    if (savedState) delete savedState;
+    if (currentState) {
+        std::cout << ">> Durum Kaydediliyor..." << std::endl;
+        savedState = new HomeStateMemento(currentState);
+    }
+}
+
+void SystemController::restorePreviousState() {
+    if (savedState) {
+        std::cout << ">> Eski Durum Yukleniyor..." << std::endl;
+        HomeState* oldState = savedState->getState();
+        changeState(oldState);
+    } else {
+        std::cout << "[Hata] Kayitli durum yok!" << std::endl;
+    }
+}
+
+std::string SystemController::getStateName() const {
+    return currentState ? currentState->getName() : "Unknown";
+}
+
+// BU FONKSIYON EKSIKTI, EKLENDI:
+std::string SystemController::getPerformance() const {
+    return currentState ? currentState->getPerformance() : "N/A";
 }
