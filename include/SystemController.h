@@ -6,6 +6,7 @@
 #include "Logic/DetectionSystem.h"
 #include "Logic/HomeState.h"
 #include "Logic/HomeStateMemento.h"
+#include "Logic/Mode.h"
 
 // --- DEVICES & UTILS ---
 #include "Devices/Camera.h"
@@ -36,6 +37,8 @@ private:
     HomeState* currentState;
     HomeStateMemento* savedState;
 
+    Mode* currentMode;
+
     SystemController();
 
 public:
@@ -62,6 +65,10 @@ public:
     // Bilgi Fonksiyonlari
     std::string getStateName() const;
     std::string getPerformance() const; // Buna cpp'de govde ekledim
+
+    //mode yonetimi
+    void changeMode(Mode* newMode);
+    std::string getModeName() const;
 };
 
 #endif
