@@ -7,6 +7,8 @@
 #include "Devices/DeviceIterator.h"      // Yunus
 #include "Logic/ConcreteStates.h"        // Mert (State)
 #include "Logic/ConcreteModes.h"         // Mert (Mode)
+#include "UI/Menu.h"              // hamza
+#include "UI/GeneralCommands.h"   // hamza
 
 SystemController* SystemController::instance = 0;
 
@@ -66,71 +68,35 @@ void SystemController::init() {
     if (camera && securitySys) camera->attach(securitySys);
     if (smokeDetector && detectionSys) smokeDetector->attach(detectionSys);
 
+    if (!menu) {
+    menu = new Menu("MSH AKILLI EV YONETIM PANELI");
+    
+    // PDF REQ 2.1'e gore tam liste:
+    menu->addCommand(new ReportCommand());          // [1] Status
+    menu->addCommand(new AddDeviceCommand());       // [2] Add Device
+    menu->addCommand(new RemoveDeviceCommand());    // [3] Remove Device
+    menu->addCommand(new PowerControlCommand(true));  // [4] Power On
+    menu->addCommand(new PowerControlCommand(false)); // [5] Power Off
+    menu->addCommand(new SetModeCommand());         // [6] Change Mode
+    menu->addCommand(new SetStateCommand());        // [7] Change State
+    menu->addCommand(new ManualCommand());          // [8] Manual
+    menu->addCommand(new AboutCommand());           // [9] About
+    menu->addCommand(new SimulationCommand());      // [Ekstra] Test icin
+}
+
     std::cout << ">> SISTEM BASLATILDI (" << getStateName() << " - " << getModeName() << ")." << std::endl;
 }
 
 void SystemController::run() {
-    bool running = true;
-    
-    while (running) {
-        // GECICI TEST MENU
-        std::cout << "\n--- MSH KONTROL PANELI ---" << std::endl;
-        std::cout << "DURUM: " << getStateName() << " | MOD: " << getModeName() << std::endl;
-        std::cout << "PERFORMANS: " << getPerformance() << std::endl;
-        std::cout << "---------------------------" << std::endl;
-        std::cout << "[10] Cikis Yap" << std::endl;
-        std::cout << "[99] TEST: Hirsiz (Kamera)" << std::endl;
-        std::cout << "[98] TEST: Yangin (Dedektor)" << std::endl;
-        std::cout << "[96] TEST: Cihaz Yonetimi (TV Ekle/Kopyala)" << std::endl;
-        std::cout << "[95] TEST: Durum Degistir (Uyku Moduna Gec)" << std::endl;
-        std::cout << "[94] TEST: Mod Degistir (Sinema Modu - Isiklar Kapanir, TV Acilir)" << std::endl;
-        std::cout << "Secim: ";
-
-        int choice;
-        if (std::cin >> choice) {
-            if (choice == 10) {
-                running = false;
-            } 
-            else if (choice == 99) { // Kayra Test
-                if (camera) camera->detectMotion();
-            } 
-            else if (choice == 98) { // Kayra Test
-                if (smokeDetector) smokeDetector->detectSmoke();
-            }
-            else if (choice == 96) { // Murat & Yunus Test
-                std::cout << "[Test] Cihaz Fabrikasi..." << std::endl;
-                SamsungFactory sf;
-                Device* tv = sf.createTV();
-                if(deviceMgr) {
-                    int id = deviceMgr->addDevice(tv);
-                    std::cout << "TV Eklendi. ID: " << id << std::endl;
-                    deviceMgr->copyDevice(id); // Prototype Testi
-                    std::cout << "TV Kopyalandi." << std::endl;
-                }
-            }
-            else if (choice == 95) { // Mert State Test
-                std::cout << "[Test] Uyku Durumuna Geciliyor..." << std::endl;
-                changeState(new SleepState());
-            }
-            else if (choice == 94) { // Mert Mode Test
-                std::cout << "[Test] Sinema Moduna Geciliyor..." << std::endl;
-                // Once cihaz yoksa test icin ekleyelim ki etkiyi gorelim
-                if (deviceMgr && deviceMgr->getDeviceCount() == 0) {
-                     SamsungFactory sf;
-                     deviceMgr->addDevice(sf.createTV());
-                     std::cout << "(Test icin otomatik TV eklendi)" << std::endl;
-                }
-                changeMode(new CinemaMode());
-            }
-            else {
-                std::cout << "Gecersiz secim." << std::endl;
-            }
-        } else {
-             std::cin.clear();
-             std::string temp;
-             std::getline(std::cin, temp);
-        }
+    // Artik karmasik switch-case yok!
+    // Tum yetki Menu objesinde.
+    if (menu) {
+        menu->run();
+    } else {
+        std::cout << "HATA: Menu baslatilamadi!" << std::endl;
     }
+    
+    // Menu'den donduysek (0'a basildiysa) kapat
     shutdown();
 }
 
@@ -211,4 +177,10 @@ void SystemController::changeMode(Mode* newMode) {
 
 std::string SystemController::getModeName() const {
     return currentMode ? currentMode->getName() : "No Mode";
+}
+
+void SystemController::log(const std::string& message) {
+    if (logger) {
+        logger->log(message);
+    }
 }

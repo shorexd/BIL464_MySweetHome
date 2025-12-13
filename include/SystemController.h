@@ -69,6 +69,9 @@ public:
     //mode yonetimi
     void changeMode(Mode* newMode);
     std::string getModeName() const;
+
+    // log icin
+    void log(const std::string& message); // Log yazma yardimcisi
 };
 
 #endif

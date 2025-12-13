@@ -1,29 +1,20 @@
-/**
- * DOSYA ADI SecuritySystem.h
- * ROLÜ: Somut Gözlemci (Concrete Observer)
- * GÖREVİ: Kameradan sinyal geldiğinde Güvenlik Zincirini tetikler.
- * İLGİLİ LLR LLR-02, LLR-03
- */
-
 #ifndef SECURITYSYSTEM_H
 #define SECURITYSYSTEM_H
 
-#include "IObserver.h" // Sözleşmeyi bilmesi lazım
+#include "Observer.h" // <--- EKLENDI: Artik IObserver'i buradan taniyor
 #include <string>
-#include <iostream>
 
-// ": public IObserver" -> "Ben Observer sözleşmesini imzaladım" demek.
+// Observer Pattern: Observer (Gozlemci)
 class SecuritySystem : public IObserver {
 public:
-    SecuritySystem();  // Yapıcı (Başlangıç)
-    ~SecuritySystem(); // Yıkıcı (Bitiş)
+    SecuritySystem();
+    ~SecuritySystem();
 
-    // Sözleşme gereği bu fonksiyonu tanımlamak ZORUNDAYIZ:
-    void update(const std::string& event_type);
+    // IObserver Arayuzu
+    void update(const std::string& eventType);
 
-private:
-    // İleride yazacağımız Zincirleme Reaksiyonu (Alarm->Işık->Polis) başlatacak fonksiyon.
+    // Chain of Responsibility Baslatici
     void executeSecurityChain();
 };
 
-#endif // SECURITYSYSTEM_H
+#endif

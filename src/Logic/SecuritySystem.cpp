@@ -1,13 +1,8 @@
-/**
- * DOSYA ADI SecuritySystem.cpp (GÜNCELLENMİŞ HALİ)
- * GÖREVİ: Zincirin kurulduğu ve başlatıldığı yer.
- */
-
-#include "SecuritySystem.h"
-// Zincir halkalarını içeri alıyoruz
-#include "AlarmAction.h"
-#include "LightOnAction.h"
-#include "CallPoliceAction.h"
+#include "Logic/SecuritySystem.h"
+#include "Logic/AlarmAction.h"
+#include "Logic/LightOnAction.h"
+#include "Logic/CallPoliceAction.h"
+#include <iostream> // <--- EKSIK OLAN BUYDU, EKLENDI
 
 SecuritySystem::SecuritySystem() {
     std::cout << "[SecuritySystem] Guvenlik sistemi aktif edildi." << std::endl;
@@ -17,37 +12,38 @@ SecuritySystem::~SecuritySystem() {
     std::cout << "[SecuritySystem] Guvenlik sistemi kapatiliyor." << std::endl;
 }
 
-void SecuritySystem::update(const std::string& event_type) {
-    std::cout << "[SecuritySystem] Sinyal alindi: " << event_type << std::endl;
+void SecuritySystem::update(const std::string& eventType) {
+    std::cout << "[SecuritySystem] Sinyal alindi: " << eventType << std::endl;
 
-    if (event_type == "MOTION_DETECTED") {
+    if (eventType == "MOTION_DETECTED") {
         std::cout << "[SecuritySystem] !!! TEHLIKE !!! Hareket algilandi." << std::endl;
-        executeSecurityChain(); 
+        executeSecurityChain();
     } else {
         std::cout << "[SecuritySystem] Bu sinyal guvenlik tehdidi degil." << std::endl;
     }
 }
 
-// İŞTE SİHİR BURADA GERÇEKLEŞİYOR!
 void SecuritySystem::executeSecurityChain() {
     std::cout << ">>> [ZINCIR KURULUYOR] Alarm -> Isik -> Polis <<<" << std::endl;
 
-    // 1. Halkaları Oluştur (Heap bellekte)
-    AbstractActionHandler* alarm = new AlarmAction();
-    AbstractActionHandler* light = new LightOnAction();
-    AbstractActionHandler* police = new CallPoliceAction();
+    // Zincir Halkalarini Olustur
+    // (Not: Gercek uygulamada bunlari member olarak tutmak daha iyidir ama 
+    // odevi karmasiklastirmamak icin burada yerel uretiyoruz)
+    AlarmAction* alarm = new AlarmAction();
+    LightOnAction* lights = new LightOnAction();
+    CallPoliceAction* police = new CallPoliceAction();
 
-    // 2. Zinciri Bağla (Alarm -> Işık -> Polis)
-    alarm->setNext(light)->setNext(police);
+    // Zinciri Bagla: Alarm -> Isik -> Polis
+    alarm->setNext(lights);
+    lights->setNext(police);
 
-    // 3. Zinciri Başlat ("SECURITY_CHAIN" koduyla)
-    // Bu kod sayesinde LightOn çalışacak ama FlashLight çalışmayacak.
-    alarm->handle("SECURITY_CHAIN");
+    // Zinciri Baslat
+    alarm->handle("Guvenlik İhlali");
 
-    // 4. Temizlik (Memory Cleanup) - İşi bitenleri siliyoruz
+    // Temizlik (Zincir halkalarini siliyoruz)
     delete alarm;
-    delete light;
+    delete lights;
     delete police;
-    
+
     std::cout << ">>> [ZINCIR TAMAMLANDI] Guvenlik protokolu sona erdi. <<<" << std::endl;
 }

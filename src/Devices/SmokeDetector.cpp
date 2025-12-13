@@ -1,4 +1,4 @@
-#include "../../include/Devices/SmokeDetector.h"
+#include "Devices/SmokeDetector.h"
 #include <iostream>
 
 SmokeDetector::SmokeDetector() {}
@@ -9,17 +9,21 @@ void SmokeDetector::attach(IObserver* observer) {
     observers.push_back(observer);
 }
 
-void SmokeDetector::detach(IObserver* observer) {
-    // Implementation not needed for basic scenario
+void SmokeDetector::detach(IObserver* /*observer*/) {
+    // Parametre kullanilmadigi icin ismi kaldirildi (Warning fix)
 }
 
-void SmokeDetector::notify(const std::string& event_type) {
+void SmokeDetector::notify(const std::string& eventType) {
     for (size_t i = 0; i < observers.size(); ++i) {
-        observers[i]->update(event_type);
+        observers[i]->update(eventType);
     }
 }
 
 void SmokeDetector::detectSmoke() {
-    std::cout << "[SmokeDetector] Duman/Gaz algilandi! Sinyal gonderiliyor..." << std::endl;
+    std::cout << "[SmokeDetector] DUMAN ALGILANDI!\n";
     notify("DANGER_DETECTED");
+}
+
+std::string SmokeDetector::getType() const {
+    return "SmokeDetector";
 }
