@@ -2,14 +2,14 @@
 #include "Logic/AlarmAction.h"
 #include "Logic/LightOnAction.h"
 #include "Logic/CallPoliceAction.h"
-#include <iostream> // <--- EKSIK OLAN BUYDU, EKLENDI
+#include <iostream>
 
 SecuritySystem::SecuritySystem() {
-    std::cout << "[SecuritySystem] Guvenlik sistemi aktif edildi." << std::endl;
+    // Constructor (Bos kalabilir veya log atabilir)
 }
 
 SecuritySystem::~SecuritySystem() {
-    std::cout << "[SecuritySystem] Guvenlik sistemi kapatiliyor." << std::endl;
+    // Destructor
 }
 
 void SecuritySystem::update(const std::string& eventType) {
@@ -27,18 +27,18 @@ void SecuritySystem::executeSecurityChain() {
     std::cout << ">>> [ZINCIR KURULUYOR] Alarm -> Isik -> Polis <<<" << std::endl;
 
     // Zincir Halkalarini Olustur
-    // (Not: Gercek uygulamada bunlari member olarak tutmak daha iyidir ama 
-    // odevi karmasiklastirmamak icin burada yerel uretiyoruz)
-    AlarmAction* alarm = new AlarmAction();
-    LightOnAction* lights = new LightOnAction();
-    CallPoliceAction* police = new CallPoliceAction();
+    AbstractActionHandler* alarm = new AlarmAction();
+    AbstractActionHandler* lights = new LightOnAction();
+    AbstractActionHandler* police = new CallPoliceAction();
 
     // Zinciri Bagla: Alarm -> Isik -> Polis
     alarm->setNext(lights);
     lights->setNext(police);
 
-    // Zinciri Baslat
-    alarm->handle("Guvenlik İhlali");
+    // FIX: Zinciri dogru "Context Key" ile baslatiyoruz.
+    // LightOnAction ve CallPoliceAction "SECURITY_CHAIN" bekliyor.
+    // Eskiden burasi "Guvenlik İhlali" oldugu icin sonraki adimlar calismiyordu.
+    alarm->handle("SECURITY_CHAIN");
 
     // Temizlik (Zincir halkalarini siliyoruz)
     delete alarm;

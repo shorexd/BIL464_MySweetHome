@@ -1,7 +1,10 @@
 #include "Devices/SmokeDetector.h"
 #include <iostream>
 
-SmokeDetector::SmokeDetector() {}
+SmokeDetector::SmokeDetector() {
+    this->name = "Duman/Gaz Dedektoru";
+    this->isOn = true;
+}
 
 SmokeDetector::~SmokeDetector() {}
 
@@ -9,9 +12,7 @@ void SmokeDetector::attach(IObserver* observer) {
     observers.push_back(observer);
 }
 
-void SmokeDetector::detach(IObserver* /*observer*/) {
-    // Bos implementasyon
-}
+void SmokeDetector::detach(IObserver* /*observer*/) {}
 
 void SmokeDetector::notify(const std::string& eventType) {
     for (size_t i = 0; i < observers.size(); ++i) {
@@ -19,12 +20,25 @@ void SmokeDetector::notify(const std::string& eventType) {
     }
 }
 
+// Device Fonksiyonlari
+void SmokeDetector::turnOn() {
+    isOn = true; 
+    std::cout << "[Detector] ID:" << id << " Aktif." << std::endl;
+}
+
+void SmokeDetector::turnOff() {
+    std::cout << "[Detector] ID:" << id << " Kapatilamaz (Guvenlik Geregi)." << std::endl;
+}
+
+Device* SmokeDetector::clone() const {
+    return new SmokeDetector(*this);
+}
+
 void SmokeDetector::detectSmoke() {
-    // LLR-04: SmokeGasDetector olarak gorunmeli
-    std::cout << "[SmokeGasDetector] DUMAN/GAZ ALGILANDI!\n";
+    std::cout << "[SmokeGasDetector " << id << "] DUMAN/GAZ ALGILANDI!\n";
     notify("DANGER_DETECTED");
 }
 
 std::string SmokeDetector::getType() const {
-    return "SmokeGasDetector"; // LLR uyumlulugu icin isim guncellendi
+    return "SmokeGasDetector";
 }

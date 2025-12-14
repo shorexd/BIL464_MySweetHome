@@ -5,12 +5,11 @@
 #include "ChineseLight.h" 
 #include <string>
 
-// Device sinifindan miras aliyor (Fixlendi)
 class ChineseLightAdapter : public Device {
 private:
     ChineseLight* adaptee;
     std::string modelName;
-    int id;
+    int id; 
 
 public:
     explicit ChineseLightAdapter(const std::string& model);
@@ -19,7 +18,9 @@ public:
 
     void turnOn();
     void turnOff();
-    std::string getName() const;
+    
+    // NOT: getName() BURADAN KALDIRILDI (Base class kullanilacak)
+    
     int getID() const;
     void setID(int newID);
     
