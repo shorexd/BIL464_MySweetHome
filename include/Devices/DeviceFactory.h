@@ -2,12 +2,13 @@
 #define DEVICE_FACTORY_H
 
 #include "Device.h"
-#include "SamsungTV.h"
-#include "LGTV.h"
+#include "TVConfig.h" // Config yapisini tanittik
 
 class DeviceFactory {
 public:
-    virtual Device* createTV() = 0;
+    // UML & LLR-03: Config parametresi eklendi
+    virtual Device* createTV(const TVConfig& config) = 0;
+    
     virtual ~DeviceFactory() {}
 };
 

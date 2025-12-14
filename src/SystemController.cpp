@@ -7,8 +7,11 @@
 #include "Devices/DeviceIterator.h"      // Yunus
 #include "Logic/ConcreteStates.h"        // Mert (State)
 #include "Logic/ConcreteModes.h"         // Mert (Mode)
-#include "UI/Menu.h"              // hamza
-#include "UI/GeneralCommands.h"   // hamza
+#include "UI/Menu.h"                     // hamza
+#include "UI/GeneralCommands.h"          // hamza
+#include "Utils/FileLogTarget.h"         // Ali
+#include "Utils/ChinaLogAdapter.h"       // Ali
+#include "Utils/Logger.h"                // Ali
 
 SystemController* SystemController::instance = 0;
 
@@ -52,10 +55,18 @@ SystemController::~SystemController() {
 void SystemController::init() {
     // Log acilisi
     if (logger) {
-        logger->open("msh_log.txt"); 
-        logger->log("[System] SystemController initialized.");
+        // Eski 'open' metodu gitti.
+        
+        // A) Dosya Hedefi (FileLogTarget)
+        logger->attachTarget(new FileLogTarget("msh_log.txt"));
+        
+        // B) Cin Mali Cihaz Adaptoru (ChinaLogAdapter)
+        logger->attachTarget(new ChinaLogAdapter());
+
+        // Ilk Logu atiyok
+        logger->log(INFO, "[System] SystemController initialized (Targets Attached).");
     } else {
-        std::cout << "[Log-Sim] System initializing..." << std::endl;
+        std::cout << "[Log-Sim] Logger not found!" << std::endl;
     }
 
     // State Giris
@@ -69,20 +80,20 @@ void SystemController::init() {
     if (smokeDetector && detectionSys) smokeDetector->attach(detectionSys);
 
     if (!menu) {
-    menu = new Menu("MSH AKILLI EV YONETIM PANELI");
-    
-    // PDF REQ 2.1'e gore tam liste:
-    menu->addCommand(new ReportCommand());          // [1] Status
-    menu->addCommand(new AddDeviceCommand());       // [2] Add Device
-    menu->addCommand(new RemoveDeviceCommand());    // [3] Remove Device
-    menu->addCommand(new PowerControlCommand(true));  // [4] Power On
-    menu->addCommand(new PowerControlCommand(false)); // [5] Power Off
-    menu->addCommand(new SetModeCommand());         // [6] Change Mode
-    menu->addCommand(new SetStateCommand());        // [7] Change State
-    menu->addCommand(new ManualCommand());          // [8] Manual
-    menu->addCommand(new AboutCommand());           // [9] About
-    menu->addCommand(new SimulationCommand());      // [Ekstra] Test icin
-}
+        menu = new Menu("MSH AKILLI EV YONETIM PANELI");
+        
+        // REQ1 ve LLR-03'e uygun 'key' atamalari:
+        menu->addCommand('1', new ReportCommand());
+        menu->addCommand('2', new AddDeviceCommand());
+        menu->addCommand('3', new RemoveDeviceCommand());
+        menu->addCommand('4', new PowerControlCommand(true));
+        menu->addCommand('5', new PowerControlCommand(false));
+        menu->addCommand('6', new SetModeCommand());
+        menu->addCommand('7', new SetStateCommand());
+        menu->addCommand('8', new ManualCommand());
+        menu->addCommand('9', new AboutCommand());
+        menu->addCommand('!', new SimulationCommand()); // Test icin unlem
+    }
 
     std::cout << ">> SISTEM BASLATILDI (" << getStateName() << " - " << getModeName() << ")." << std::endl;
 }
@@ -119,20 +130,34 @@ void SystemController::shutdown() {
     if (currentMode) { delete currentMode; currentMode = 0; }
 
     if (logger) {
-        logger->log("[System] System shutting down.");
-        logger->close();
+        // Loglama sistemine son mesaji birakiyoruz.
+        logger->log(INFO, "[System] System shutting down.");
+        
+        // FIX: logger->close() KALDIRILDI. 
+        // Logger Singleton oldugu icin program bitince destructor'i 
+        // otomatik calisacak ve dosyalari (Targets) temizleyip kapatacak.
     }
 }
 
 // --- STATE IMPLEMENTASYONLARI ---
 
 void SystemController::changeState(HomeState* newState) {
+    // LLR-S8: State degisimi oncesinde snapshot al (Memento)
+    // Bu sayede "Previous" komutu calisabilir.
+    // Ancak restore ederken tekrar kaydetmemek icin kontrol eklenebilir
+    // ama basit Memento yapisinda her degisim bir kayit olusturur (Toggle mantigi).
+    saveCurrentState(); 
+
     if (currentState) {
-        currentState->exitState(this);
+        currentState->exitState(this); // LLR-S5: Eski state exit
         delete currentState;
     }
+    
     currentState = newState;
-    if (currentState) currentState->enterState(this);
+    
+    if (currentState) {
+        currentState->enterState(this); // LLR-S5: Yeni state enter
+    }
 }
 
 void SystemController::saveCurrentState() {

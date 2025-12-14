@@ -5,150 +5,156 @@
 #include "../SystemController.h" 
 #include "../Devices/SamsungFactory.h"
 #include "../Devices/LGFactory.h"
-#include "../Devices/ChineseLightAdapter.h" // Adapter Pattern
+#include "../Devices/ChineseLightAdapter.h"
 #include "../Devices/Camera.h"
 #include "../Devices/SmokeDetector.h"
 #include "../Logic/ConcreteModes.h"
 #include "../Logic/ConcreteStates.h"
 #include <iostream>
-#include <sstream> // String stream icin
+#include <sstream>
 
-// --- YARDIMCI: Int to String (C++98 uyumlu) ---
+// Helper
 std::string intToString(int val) {
     std::stringstream ss;
     ss << val;
     return ss.str();
 }
 
-// --- CIHAZ EKLEME KOMUTU (Gelistirilmis) ---
+// --- CIHAZ EKLEME KOMUTU (LLR-12 ve LLR-13 Tam Uyumlu) ---
 class AddDeviceCommand : public Command {
 public:
     void execute() {
         SystemController* sys = SystemController::getInstance();
         if (!sys->getDeviceManager()) return;
 
-        std::cout << "\n--- CIHAZ EKLEME SIHIRBAZI ---" << std::endl;
-        std::cout << "[1] TV (Samsung/LG - Abstract Factory)\n";
-        std::cout << "[2] Akilli Lamba (Cin Mali - Adapter Pattern)\n";
-        std::cout << "[3] Kamera (Observer Subject)\n";
+        std::cout << "\n--- CIHAZ EKLEME ---" << std::endl;
+        std::cout << "[1] TV (Samsung/LG)\n";
+        std::cout << "[2] Akilli Lamba (Adapter)\n";
+        std::cout << "[3] Kamera (Observer)\n";
         std::cout << "Secim: ";
         int choice;
         std::cin >> choice;
 
-        Device* newDevice = 0;
+        // Adet sor
+        std::cout << "Kac adet?: ";
+        int count; std::cin >> count;
+        if(count < 1) count = 1;
+
+        // Kopyalama sorusu
+        bool copyConfig = false;
+        if (count > 1) {
+            std::cout << "Kopyalansin mi? (e/h): ";
+            char c; std::cin >> c;
+            if(c=='e'||c=='E') copyConfig = true;
+        }
+
+        Device* prototype = 0;
         std::string logMsg = "";
 
-        if (choice == 1) { // TV
-            std::cout << "Marka: [1] Samsung, [2] LG: ";
-            int brand;
-            std::cin >> brand;
-            if (brand == 1) { SamsungFactory sf; newDevice = sf.createTV(); }
-            else if (brand == 2) { LGFactory lf; newDevice = lf.createTV(); }
-            logMsg = "TV Eklendi";
+        if (choice == 1) { 
+            // TV detaylarini al (LLR-01 ve LLR-03 geregi)
+            std::cout << "Marka [1]Samsung [2]LG: ";
+            int b; std::cin >> b;
+            
+            std::cout << "Model Giriniz: ";
+            std::string model; std::cin >> model;
+            
+            std::cout << "Cozunurluk (Orn: 4K): ";
+            std::string res; std::cin >> res;
+            
+            std::cout << "FPS (Orn: 60): ";
+            int fps; std::cin >> fps;
+
+            // Config paketini hazirla
+            TVConfig config(model, res, fps);
+
+            if (b == 1) prototype = SamsungFactory().createTV(config);
+            else prototype = LGFactory().createTV(config);
+            
+            logMsg = "TV";
         } 
-        else if (choice == 2) { // LAMBA
-            // FIX 1: Adapter parametre istiyordu, string verdik.
-            newDevice = new ChineseLightAdapter("CN-SmartBulb-V1");
-            logMsg = "Akilli Lamba (Adapter) Eklendi";
+        else if (choice == 2) {
+            prototype = new ChineseLightAdapter("CN-Bulb");
+            logMsg = "Lamba";
         }
-        else if (choice == 3) { // KAMERA
-            // FIX 2: Camera, Device sinifindan turetmemis olabilir. 
-            // DeviceManager'a eklemeye zorlayip hata almak yerine
-            // sadece sisteme bilgi veriyoruz.
-            std::cout << ">> Kamera Guvenlik Sistemine Baglandi (Sensor)." << std::endl;
-            sys->log("[UserAction] Kamera guvenlik sistemine eklendi.");
-            return; // DeviceManager'a eklemeden cikiyoruz
+        else if (choice == 3) {
+            std::cout << ">> Kamera guvenlige eklendi.\n";
+            return;
         }
 
-        if (newDevice) {
-            int id = sys->getDeviceManager()->addDevice(newDevice);
-            std::cout << ">> BASARILI: Cihaz eklendi. ID: " << id << std::endl;
-            sys->log("[UserAction] " + logMsg + " ID: " + intToString(id));
+        if (prototype) {
+            int firstId = sys->getDeviceManager()->addDevice(prototype);
+            std::cout << ">> Cihaz eklendi. ID: " << firstId << std::endl;
+            sys->log("[Action] " + logMsg + " eklendi. ID: " + intToString(firstId));
+
+            for (int i = 1; i < count; ++i) {
+                if (copyConfig) {
+                    int newId = sys->getDeviceManager()->copyDevice(firstId);
+                    std::cout << ">> Kopya eklendi ID: " << newId << "\n";
+                } else {
+                    // Klon yerine yeni uretim (basitlik icin klon kullaniyoruz ama ayri uretim de olabilir)
+                    int newId = sys->getDeviceManager()->addDevice(prototype->clone());
+                    std::cout << ">> Yeni eklendi ID: " << newId << "\n";
+                }
+            }
         } else {
-            std::cout << ">> HATA: Gecersiz secim veya Cihaz olusturulamadi." << std::endl;
+            std::cout << ">> HATA: Cihaz uretilemedi (Gecersiz model olabilir).\n";
         }
     }
-
-    const char* getDescription() const { return "Cihaz Ekle (TV, Lamba, Kamera)"; }
+    const char* getDescription() const { return "Cihaz Ekle"; }
 };
+
+// ... Diger komutlar (Remove, Power, Mode, State, Manual, About, Report, Simulation)
+// Bunlar AYNI KALABILIR, sadece AddDeviceCommand degisti.
+// Ancak "GeneralCommands.h" dosyasini komple yenilemek istersen asagiya kopyalayabilirim.
+// Şimdilik sadece AddDeviceCommand'i yukaridaki ile değiştirip diğerlerini koru.
 
 // --- CIHAZ SILME KOMUTU ---
 class RemoveDeviceCommand : public Command {
 public:
     void execute() {
         SystemController* sys = SystemController::getInstance();
-        if (!sys->getDeviceManager()) return;
-
-        std::cout << "Silinecek Cihaz ID: ";
-        int id;
-        std::cin >> id;
-
+        std::cout << "Silinecek ID: ";
+        int id; std::cin >> id;
         sys->getDeviceManager()->removeDevice(id);
-        std::cout << ">> Islem tamamlandi." << std::endl;
-        sys->log("[UserAction] Cihaz silme istegi gonderildi. ID: " + intToString(id));
+        std::cout << ">> Islem Tamam." << std::endl;
+        sys->log("Cihaz silindi ID: " + intToString(id));
     }
-
     const char* getDescription() const { return "Cihaz Sil"; }
 };
 
-// --- GUC YONETIMI (Power On/Off) - REQ 6 ---
 class PowerControlCommand : public Command {
-private:
-    bool turnOn; // true: ac, false: kapat
+    bool on;
 public:
-    PowerControlCommand(bool on) : turnOn(on) {}
-    
+    PowerControlCommand(bool o) : on(o) {}
     void execute() {
         SystemController* sys = SystemController::getInstance();
-        if (!sys->getDeviceManager()) return;
-
-        std::cout << "Islem yapilacak Cihaz ID (0 = Hepsi): ";
-        int id;
-        std::cin >> id;
-
+        std::cout << "ID (0=Hepsi): ";
+        int id; std::cin >> id;
         DeviceIterator it = sys->getDeviceManager()->createIterator();
-        for (it.first(); it.hasNext(); it.next()) {
-            Device* d = it.current();
-            // FIX 3: getId() degil getID() olmali (Buyuk harf duyarliligi)
-            if (d && (id == 0 || d->getID() == id)) {
-                if (turnOn) d->turnOn();
-                else d->turnOff();
+        for(it.first(); it.hasNext(); it.next()) {
+            if(id==0 || it.current()->getID() == id) {
+                if(on) it.current()->turnOn(); else it.current()->turnOff();
             }
         }
-        std::string action = turnOn ? "ACILDI" : "KAPATILDI";
-        sys->log("[UserAction] Cihaz guc durumu degistirildi: " + action);
-        std::cout << ">> Komut gonderildi." << std::endl;
+        sys->log(on ? "Guc Acildi" : "Guc Kapandi");
     }
-
-    const char* getDescription() const { 
-        return turnOn ? "Cihaz Ac (Power On)" : "Cihaz Kapat (Power Off)"; 
-    }
+    const char* getDescription() const { return on ? "Cihaz Ac" : "Cihaz Kapat"; }
 };
 
-// --- MOD DEGISTIRME ---
 class SetModeCommand : public Command {
 public:
     void execute() {
-        SystemController* sys = SystemController::getInstance();
-        
-        std::cout << "Mevcut Mod: " << sys->getModeName() << "\n";
-        std::cout << "[1] Normal\n[2] Sinema (TV On, Light Off)\n[3] Parti (Light On)\n[4] Aksam\nSecim: ";
-        int choice;
-        std::cin >> choice;
-
-        Mode* m = 0;
-        if (choice == 1) m = new NormalMode();
-        else if (choice == 2) m = new CinemaMode();
-        else if (choice == 3) m = new PartyMode();
-        else if (choice == 4) m = new EveningMode();
-
-        if (m) {
-            sys->changeMode(m);
-            sys->log("[ModeChange] Yeni Mod: " + sys->getModeName());
-        }
+        SystemController* s = SystemController::getInstance();
+        std::cout << "[1]Normal [2]Cinema [3]Party [4]Evening: ";
+        int c; std::cin >> c;
+        if(c==1) s->changeMode(new NormalMode());
+        else if(c==2) s->changeMode(new CinemaMode());
+        else if(c==3) s->changeMode(new PartyMode());
+        else if(c==4) s->changeMode(new EveningMode());
+        s->log("Mod Degisti: " + s->getModeName());
     }
-
-    const char* getDescription() const { return "Mod Degistir (Scene Management)"; }
+    const char* getDescription() const { return "Mod Degistir"; }
 };
 
 // --- DURUM (STATE) DEGISTIRME ---
@@ -158,7 +164,8 @@ public:
         SystemController* sys = SystemController::getInstance();
         
         std::cout << "Mevcut Durum: " << sys->getStateName() << "\n";
-        std::cout << "[1] Normal\n[2] Yuksek Performans\n[3] Uyku (Sleep)\n[4] Guc Tasarrufu\nSecim: ";
+        // LLR-S10: Previous State secenegi eklendi
+        std::cout << "[1] Normal\n[2] Yuksek Performans\n[3] Uyku (Sleep)\n[4] Guc Tasarrufu\n[5] Onceki Durum (Undo)\nSecim: ";
         int choice;
         std::cin >> choice;
 
@@ -166,79 +173,50 @@ public:
         else if (choice == 2) sys->changeState(new HighPerformanceState());
         else if (choice == 3) sys->changeState(new SleepState());
         else if (choice == 4) sys->changeState(new LowPowerState());
+        else if (choice == 5) {
+            // LLR-S10: Restore islemi
+            sys->restorePreviousState();
+        }
         
+        // Loglama
         sys->log("[StateChange] Yeni Durum: " + sys->getStateName());
     }
 
     const char* getDescription() const { return "Sistem Durumunu Degistir (State)"; }
 };
 
-// --- SIMULASYON (TEST) ---
+class ManualCommand : public Command {
+public:
+    void execute() { std::cout << "\n--- MANUAL ---\nCihazlari ekleyin, modlari degistirin...\n"; }
+    const char* getDescription() const { return "Manual"; }
+};
+
+class AboutCommand : public Command {
+public:
+    void execute() { std::cout << "\n--- ABOUT ---\nMSH v1.0 - Team 3\n"; }
+    const char* getDescription() const { return "About"; }
+};
+
+class ReportCommand : public Command {
+public:
+    void execute() { 
+        SystemController* s = SystemController::getInstance();
+        std::cout << "Mod: " << s->getModeName() << " | Durum: " << s->getStateName() << "\n";
+        if(s->getDeviceManager()) std::cout << "Cihaz Sayisi: " << s->getDeviceManager()->getDeviceCount() << "\n";
+    }
+    const char* getDescription() const { return "Rapor"; }
+};
+
 class SimulationCommand : public Command {
 public:
     void execute() {
-        SystemController* sys = SystemController::getInstance();
-        std::cout << "\n--- SENARYO SIMULASYONU ---\n";
-        std::cout << "[1] Hirsiz Var! (Kamera Hareket Algilar)\n";
-        std::cout << "[2] Yangin Var! (Dedektor Duman Algilar)\n";
-        std::cout << "Secim: ";
-        int choice;
-        std::cin >> choice;
-
-        if (choice == 1) {
-            sys->log("[Simulation] Hirsiz senaryosu tetiklendi.");
-            if (sys->getCamera()) sys->getCamera()->detectMotion();
-        } else if (choice == 2) {
-            sys->log("[Simulation] Yangin senaryosu tetiklendi.");
-            if (sys->getSmokeDetector()) sys->getSmokeDetector()->detectSmoke();
-        }
+        SystemController* s = SystemController::getInstance();
+        std::cout << "[1]Hirsiz [2]Yangin: ";
+        int c; std::cin >> c;
+        if(c==1) { s->log("Hirsiz Simulasyonu"); if(s->getCamera()) s->getCamera()->detectMotion(); }
+        else if(c==2) { s->log("Yangin Simulasyonu"); if(s->getSmokeDetector()) s->getSmokeDetector()->detectSmoke(); }
     }
-    const char* getDescription() const { return "Simulasyon Baslat (Hirsiz/Yangin)"; }
-};
-
-// --- ABOUT (REQ 2.1 - 9) ---
-class AboutCommand : public Command {
-public:
-    void execute() {
-        std::cout << "\n===================================" << std::endl;
-        std::cout << "   MY SWEET HOME (MSH) v1.0" << std::endl;
-        std::cout << "===================================" << std::endl;
-        std::cout << "Developers:\n";
-        std::cout << "- Ergun (Integrator)\n- Hamza (UI)\n- Murat (Factory)\n";
-        std::cout << "- Yunus (Manager)\n- Mert (State/Mode)\n- Kayra (Logic)\n- Ali (Logger)\n";
-        std::cout << "===================================" << std::endl;
-    }
-    const char* getDescription() const { return "Hakkinda (About)"; }
-};
-
-// --- MANUAL (REQ 2.1 - 8) ---
-class ManualCommand : public Command {
-public:
-    void execute() {
-        std::cout << "\n--- KULLANIM KILAVUZU ---\n";
-        std::cout << "1. Cihaz ekleyerek sistemi kurun.\n";
-        std::cout << "2. Modlari degistirerek (Sinema, Parti) ortami ayarlayin.\n";
-        std::cout << "3. Simulasyon menusu ile Guvenlik sistemini test edin.\n";
-        std::cout << "4. Log dosyasi (msh_log.txt) tum islemleri kaydeder.\n";
-    }
-    const char* getDescription() const { return "Yardim (Manual)"; }
-};
-
-// --- RAPOR ---
-class ReportCommand : public Command {
-public:
-    void execute() {
-        SystemController* sys = SystemController::getInstance();
-        std::cout << "\n--- [MSH] SISTEM RAPORU ---" << std::endl;
-        std::cout << "Mod: " << sys->getModeName() << std::endl;
-        std::cout << "Durum: " << sys->getStateName() << std::endl;
-        std::cout << "Performans: " << sys->getPerformance() << std::endl;
-        if (sys->getDeviceManager()) {
-            std::cout << "Toplam Cihaz: " << sys->getDeviceManager()->getDeviceCount() << std::endl;
-        }
-        std::cout << "---------------------------" << std::endl;
-    }
-    const char* getDescription() const { return "Sistem Raporu"; }
+    const char* getDescription() const { return "Simulasyon"; }
 };
 
 #endif

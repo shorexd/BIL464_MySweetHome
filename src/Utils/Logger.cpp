@@ -1,66 +1,62 @@
-// src/Logger.cpp
-#include "Logger.h"
+#include "Utils/Logger.h"
 #include <iostream>
 #include <ctime>
-
-namespace {
-    // Zaman damgası üretmek için yardımcı fonksiyon (C++98 uyumlu)
-    std::string currentDateTime() {
-        std::time_t now = std::time(0);  // C++98'de 0 kullanılır
-        char buf[32];
-        if (std::strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S",
-                          std::localtime(&now))) {
-            return std::string(buf);
-        }
-        return std::string();
-    }
-}
+#include <sstream>
 
 Logger& Logger::getInstance() {
-    // Fonksiyon scope static'i C++98'de destekleniyor
     static Logger instance;
     return instance;
 }
 
-Logger::Logger() : m_file() {
-}
+Logger::Logger() {}
 
 Logger::~Logger() {
-    close();
+    // LLR-06: Shutdown sirasinda hedefleri temizle
+    for (size_t i = 0; i < targets.size(); ++i) {
+        delete targets[i];
+    }
+    targets.clear();
 }
 
-void Logger::open(const std::string& filename) {
-    if (!m_file.is_open()) {
-        m_file.open(filename.c_str());
-        if (!m_file) {
-            std::cerr << "[Logger] ERROR: Could not open log file: "
-                      << filename << std::endl;
+void Logger::attachTarget(ILogTarget* target) {
+    targets.push_back(target);
+}
+
+std::string Logger::getLevelString(LogLevel level) {
+    switch(level) {
+        case INFO: return "INFO";
+        case WARNING: return "WARNING";
+        case ERROR: return "ERROR";
+        default: return "UNKNOWN";
+    }
+}
+
+std::string Logger::getCurrentTime() {
+    std::time_t now = std::time(0);
+    char buf[80];
+    std::strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", std::localtime(&now));
+    return std::string(buf);
+}
+
+void Logger::log(LogLevel level, const std::string& message) {
+    // LLR-03: Formatlama (Zaman + Seviye + Mesaj)
+    std::stringstream ss;
+    ss << "[" << getCurrentTime() << "] [" << getLevelString(level) << "] " << message;
+    std::string formattedMsg = ss.str();
+
+    // LLR-04: Tum hedeflere dagit (Loop)
+    for (size_t i = 0; i < targets.size(); ++i) {
+        if (targets[i]) {
+            targets[i]->write(formattedMsg);
         }
     }
+    
+    // Konsola da basalim ki gorelim
+    // std::cout << formattedMsg << std::endl; 
+    // (Not: FileLogTarget ve ChinaAdapter zaten ekrana bilgi veriyor, burayi kapattim dublike olmasin)
 }
 
-void Logger::close() {
-    if (m_file.is_open()) {
-        m_file.flush();
-        m_file.close();
-    }
-}
-
-bool Logger::isOpen() const {
-    return m_file.is_open();
-}
-
+// Uyumluluk modu
 void Logger::log(const std::string& message) {
-    std::string line = "[" + currentDateTime() + "] " + message;
-
-    if (m_file.is_open()) {
-        m_file << line << std::endl;
-    }
-
-    // Ekrana da bas
-    std::cout << line << std::endl;
-}
-
-void Logger::logError(const std::string& message) {
-    log(std::string("ERROR: ") + message);
+    log(INFO, message);
 }

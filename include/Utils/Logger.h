@@ -1,39 +1,43 @@
-// include/Logger.h
 #ifndef LOGGER_H
 #define LOGGER_H
 
-#include <fstream>
+#include <vector>
 #include <string>
+#include "ILogTarget.h"
+
+// LLR-03: Log Seviyeleri
+enum LogLevel {
+    INFO,
+    WARNING,
+    ERROR
+};
 
 class Logger {
 public:
-    // Singleton erişim noktası
     static Logger& getInstance();
 
-    // Log dosyasını aç (varsayılan isim: "msh_log.txt")
-    void open(const std::string& filename = "msh_log.txt");
-
-    // Log dosyasını kapat
-    void close();
-
-    // Dosya açık mı?
-    bool isOpen() const;
-
-    // Genel log fonksiyonu
+    // Hedef Yonetimi (LLR-04)
+    void attachTarget(ILogTarget* target);
+    
+    // Loglama Fonksiyonlari
+    void log(LogLevel level, const std::string& message);
+    
+    // Mevcut kodlarla uyumluluk icin (Varsayilan INFO)
     void log(const std::string& message);
-
-    // Hata loglamak için kısayol
-    void logError(const std::string& message);
 
 private:
     Logger();
     ~Logger();
-
-    // C++98 tarzı: kopyalama yasak (sadece deklarasyon, tanım yok)
+    
+    // Kopyalama Yasak
     Logger(const Logger&);
     Logger& operator=(const Logger&);
 
-    std::ofstream m_file;
+    std::vector<ILogTarget*> targets;
+    
+    // Yardimci: Zaman damgasi (C++98)
+    std::string getCurrentTime();
+    std::string getLevelString(LogLevel level);
 };
 
-#endif // LOGGER_H
+#endif

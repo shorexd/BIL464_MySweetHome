@@ -10,7 +10,7 @@ void SmokeDetector::attach(IObserver* observer) {
 }
 
 void SmokeDetector::detach(IObserver* /*observer*/) {
-    // Parametre kullanilmadigi icin ismi kaldirildi (Warning fix)
+    // Bos implementasyon
 }
 
 void SmokeDetector::notify(const std::string& eventType) {
@@ -20,10 +20,11 @@ void SmokeDetector::notify(const std::string& eventType) {
 }
 
 void SmokeDetector::detectSmoke() {
-    std::cout << "[SmokeDetector] DUMAN ALGILANDI!\n";
+    // LLR-04: SmokeGasDetector olarak gorunmeli
+    std::cout << "[SmokeGasDetector] DUMAN/GAZ ALGILANDI!\n";
     notify("DANGER_DETECTED");
 }
 
 std::string SmokeDetector::getType() const {
-    return "SmokeDetector";
+    return "SmokeGasDetector"; // LLR uyumlulugu icin isim guncellendi
 }

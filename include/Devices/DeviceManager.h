@@ -3,38 +3,40 @@
 
 #include <vector>
 #include <utility>
-#include "Device.h"          // Duzeltildi
-#include "DeviceIterator.h"  // Duzeltildi
+#include "Device.h"          
+#include "DeviceIterator.h"  
 
 class DeviceManager {
 public:
     DeviceManager();
     ~DeviceManager();
 
-    // Cihaz Ekleme
+    // Cihaz Ekleme (LLR-3: Iterator kontrolu iceride yapilacak)
     int addDevice(Device *device);
 
     // Cihaz Bulma
     Device *findDevice(int deviceId);
 
-    // Cihaz Silme
+    // Cihaz Silme (LLR-7)
     bool removeDevice(int deviceId);
 
-    // --- PROTOTYPE PATTERN (Yunus'un eksigi tamamlandi) ---
-    // Var olan bir cihazi kopyalar
+    // Cihaz Kopyalama (LLR-4, LLR-6)
     int copyDevice(int deviceId);
 
-    // Iterator
+    // LLR-8: Sistem acilisinda yukleme (EKSİKTİ, EKLENDİ)
+    void loadDevicesFromStorage();
+
+    // LLR-9: Disari iterator verme
     DeviceIterator createIterator();
     
-    // Test icin toplam sayi
     int getDeviceCount() const;
 
 private:
     std::vector<std::pair<int, Device *> > m_devices;
     int m_nextId;
 
-    bool idExists(int deviceId) const;
+    // LLR-3: ID kontrolunu Iterator ile yapacagiz
+    bool checkIdWithIterator(int deviceId);
 };
 
 #endif
